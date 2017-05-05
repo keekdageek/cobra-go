@@ -20,14 +20,17 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	log "github.com/Sirupsen/logrus"
+	"github.com/gogap/logrus_mate"
 	"reflect"
+	"strings"
 )
 
 var cfgFile string
+var logLevel string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "lights",
+	Use:   "hello",
 	Short: "A brief description of your application",
 	Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
@@ -44,7 +47,7 @@ to quickly create a Cobra application.`,
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		os.Exit(-1)
 	}
 }
@@ -56,42 +59,72 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.lights.yaml)")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hello.yaml)")
+	RootCmd.PersistentFlags().StringVarP(&logLevel, "log", "l", "", "Package Log Level")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
+
+//func run(cmd *cobra.Command, args []string) {
+//	config, err := config.LoadConfig(cmd)
+//	if err != nil {
+//		log.Fatal("Failed to load config: " + err.Error())
+//	}
+//
+//	//logger, err := conf.ConfigureLogging(&config.LogConfig)
+//	//if err != nil {
+//	//	log.Fatal("Failed to configure logging: " + err.Error())
+//	//}
+//	//
+//	//logger.Infof("Starting with config: %+v", config)
+//}
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	customSettings := ".lights.local"
+
+
+	// from the environment
+	viper.SetEnvPrefix("HELLO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
+	// from the config files
+	customSettings := "hello.local"
 	if cfgFile != "" {
 		customSettings = cfgFile
 	}
-	files := []string{".lights", customSettings}
+	files := []string{"hello", customSettings}
 	configFiles := [] string{}
+
 	for _, file := range files {
 		viper.SetConfigName(file) // name of config file (without extension)
 		viper.AddConfigPath(".")  // adding home directory as first search path
-		viper.AutomaticEnv()          // read in environment variables that match
 
 		// If a config file is found, read it in.
 		if err := viper.MergeInConfig(); err == nil {
 			configFiles = append(configFiles, viper.ConfigFileUsed())
 		}
 	}
-	logLevel := viper.GetString("log.package")
-	if len(logLevel) > 0 && logLevel != "info" {
-		log.Info("Changing package log level to: ", logLevel)
-		switch logLevel {
-		case "warn":
-			log.SetLevel(log.WarnLevel)
-		case "error":
-			log.SetLevel(log.ErrorLevel)
-		case "debug":
-			log.SetLevel(log.DebugLevel)
-		}
+
+	mate, _ := logrus_mate.NewLogrusMate(
+		logrus_mate.ConfigFile(
+			"./config/logrus.conf",
+		),
+	)
+
+	// Initialize log, merge logrus and log flag
+	if logLevel != "" {
+		mate.Hijack(
+			log.StandardLogger(), "hello",
+			logrus_mate.ConfigString(fmt.Sprintf(`{ hello { level = "%s"} }`, logLevel)),
+		)
+	} else {
+		mate.Hijack(
+			log.StandardLogger(), "hello",
+		)
 	}
+
 	for _, configFile := range configFiles {
 		log.Debug("Using config file: ", configFile)
 	}

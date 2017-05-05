@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/keekdageek/lights/cmd"
+import "github.com/keekdageek/cobra-go/cmd"
 
 func main() {
 	cmd.Execute()

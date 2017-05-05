@@ -1,0 +1,7 @@
+package: github.com/keekdageek/lights
+import:
+- package: github.com/Sirupsen/logrus
+  version: ^0.11.5
+- package: github.com/spf13/cobra
+- package: github.com/spf13/viper
+- package: github.com/stretchr/testify

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	//log "github.com/Sirupsen/logrus"
 )
 
 // versionCmd represents the version command
