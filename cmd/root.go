@@ -19,6 +19,8 @@ import (
 	"os"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	log "github.com/Sirupsen/logrus"
+	"reflect"
 )
 
 var cfgFile string
@@ -62,17 +64,49 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	customSettings := ".lights.local"
 	if cfgFile != "" {
-		// enable ability to specify config file via flag
-		viper.SetConfigFile(cfgFile)
+		customSettings = cfgFile
 	}
+	files := []string{".lights", customSettings}
+	configFiles := [] string{}
+	for _, file := range files {
+		viper.SetConfigName(file) // name of config file (without extension)
+		viper.AddConfigPath(".")  // adding home directory as first search path
+		viper.AutomaticEnv()          // read in environment variables that match
 
-	viper.SetConfigName(".lights") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")  // adding home directory as first search path
-	viper.AutomaticEnv()          // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		// If a config file is found, read it in.
+		if err := viper.MergeInConfig(); err == nil {
+			configFiles = append(configFiles, viper.ConfigFileUsed())
+		}
 	}
+	logLevel := viper.GetString("log.package")
+	if len(logLevel) > 0 && logLevel != "info" {
+		log.Info("Changing package log level to: ", logLevel)
+		switch logLevel {
+		case "warn":
+			log.SetLevel(log.WarnLevel)
+		case "error":
+			log.SetLevel(log.ErrorLevel)
+		case "debug":
+			log.SetLevel(log.DebugLevel)
+		}
+	}
+	for _, configFile := range configFiles {
+		log.Debug("Using config file: ", configFile)
+	}
+}
+
+func CallFuncByName(myClass interface{}, funcName string, params ...interface{}) (out []reflect.Value, err error) {
+	myClassValue := reflect.ValueOf(myClass)
+	m := myClassValue.MethodByName(funcName)
+	if !m.IsValid() {
+		return make([]reflect.Value, 0), fmt.Errorf("Method not found \"%s\"", funcName)
+	}
+	in := make([]reflect.Value, len(params))
+	for i, param := range params {
+		in[i] = reflect.ValueOf(param)
+	}
+	out = m.Call(in)
+	return
 }

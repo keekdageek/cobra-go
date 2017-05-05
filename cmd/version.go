@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // versionCmd represents the version command
@@ -31,7 +32,8 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
-		fmt.Println("Version 0.1.0")
+		version := viper.GetString("settings.version")
+		fmt.Println(fmt.Sprintf("version %s", version))
 	},
 }
 
